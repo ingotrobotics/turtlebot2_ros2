@@ -41,7 +41,7 @@ RUN sed -i '/ecl_lite/s/release\/1.1.x/release\/1.2.x/g' $KOBUKI_BUILD_SPACE/kob
 
 # Source virtual environment, upgrade setuptools (58.2 is last version that doesn't issue a warning)
 SHELL ["/bin/bash", "-c"]
-RUN source "$KOBUKI_BUILD_SPACE/venv.bash" && pip install --upgrade setuptools
+RUN sed -i '/setuptools/s/45.2.0/68.2.2/' $KOBUKI_BUILD_SPACE/venv.bash && source "$KOBUKI_BUILD_SPACE/venv.bash"
 
 #ENV VIRTUAL_ENV="$KOBUKI_BUILD_SPACE/.venv"
 #ENV PATH="$VIRTUAL_ENV/bin:$PATH"
