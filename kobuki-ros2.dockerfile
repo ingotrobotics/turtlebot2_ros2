@@ -35,7 +35,7 @@ SHELL ["/bin/bash", "-c"]
 RUN sed -i '/setuptools/s/45.2.0/68.2.2/' $KOBUKI_BUILD_SPACE/venv.bash && source "$KOBUKI_BUILD_SPACE/venv.bash"
 
 # Build release with debug symbols
-RUN source /opt/ros/iron/setup.bash && cd $ROBOT_WORKSPACE && colcon build --merge-install --parallel-workers 6 --cmake-args -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo
+RUN source /opt/ros/$ROS_DISTRO/setup.bash && cd $ROBOT_WORKSPACE && colcon build --merge-install --parallel-workers 6 --cmake-args -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo
 
 # update the source workspace
 #RUN vcs pull /home/robot/src && deactivate
@@ -43,7 +43,7 @@ RUN source /opt/ros/iron/setup.bash && cd $ROBOT_WORKSPACE && colcon build --mer
 
 
 
-# Consider updating kobuki_standalone.repos to point to iron, not foxy
+# Consider updating kobuki_standalone.repos to point to $ROS_DISTRO, not foxy
 
 # Use Multi-stage build to just have Kobuki final built package files, similar to a binary install
 # https://www.docker.com/blog/intro-guide-to-dockerfile-best-practices/
