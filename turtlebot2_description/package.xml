@@ -3,7 +3,7 @@
 <package format="3">
   <name>turtlebot2_description</name>
   <version>0.0.0</version>
-  <description>Turtlebot2 in ROS 2 Iron</description>
+  <description>Turtlebot2 in ROS 2 Iron URDF and Meshes</description>
   <maintainer email="proan@ingotrobotics.com">Phil Roan</maintainer>
   <license>Apache 2.0</license>
 
@@ -12,8 +12,7 @@
   <exec_depend>joint_state_publisher</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
   <exec_depend>xacro</exec_depend>
-  <exec_depend>robot_localization</exec_depend>
-  
+
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 

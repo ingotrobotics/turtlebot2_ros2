@@ -15,7 +15,7 @@
   
   <xacro:kobuki/>
   <xacro:stack_hexagons   parent="base_link"/>
-  <xacro:hokuyo_ust10_mount parent_link="plate_top_link" topic="scan" prefix="ingot">
-    <origin xyz=".2 0 0" rpy="0 0 0" />
+  <xacro:hokuyo_ust10_mount parent_link="plate_top_link" topic="scan" prefix="nav">
+    <origin xyz=".05 0 0" rpy="0 0 0" />
   </xacro:hokuyo_ust10_mount>
 </robot>
