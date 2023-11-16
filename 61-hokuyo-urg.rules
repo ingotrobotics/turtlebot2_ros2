@@ -1,0 +1,2 @@
+# Setting mode = 0666 for now, but would like to change group for access
+SUBSYSTEM=="tty", ATTRS{idVendor}=="15d1", ATTRS{idProduct}=="0000", MODE:="0666", GROUP:="dialout", SYMLINK+="hokuyo"
