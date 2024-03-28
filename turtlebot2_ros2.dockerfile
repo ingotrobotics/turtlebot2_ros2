@@ -75,13 +75,16 @@ RUN sed -i 's/laser_frame_id: "laser"/laser_frame_id: "nav_laser"/g' /opt/ros/$R
 
 
 # Setup Turtlebot2 URDF
-COPY turtlebot2_description/ $ROBOT_WORKSPACE/src/turtlebot2_description
-COPY turtlebot2_bringup/ $ROBOT_WORKSPACE/src/turtlebot2_bringup
+#COPY turtlebot2_description/ $ROBOT_WORKSPACE/src/turtlebot2_description
+#COPY turtlebot2_bringup/ $ROBOT_WORKSPACE/src/turtlebot2_bringup
+#RUN --mount=type=bind,source=.,target=$ROBOT_WORKSPACE/src,readonly \
+#    mkdir -p $ROBOT_WORKSPACE/src
 # Pre-copied URDF and xacro files from https://github.com/turtlebot/turtlebot.git into our turtlebot2_description folder
 
 # Install dependencies
 WORKDIR $ROBOT_WORKSPACE
-RUN apt-get update && rosdep install --from-paths ./src -y --ignore-src
+RUN --mount=type=bind,source=.,target=$ROBOT_WORKSPACE/src,readonly \
+    apt-get update && rosdep install --from-paths ./src -y --ignore-src
 
 # Install Nav2 packages
 RUN apt-get update && apt-get install -y \
@@ -93,7 +96,10 @@ RUN apt-get update && apt-get install -y \
 # Build turtlebot2_description and turtlebot2_bringup
 SHELL ["/bin/bash", "-c"]
 ARG parallel_jobs=8
-RUN source /opt/ros/$ROS_DISTRO/setup.bash && cd $ROBOT_WORKSPACE && colcon build --packages-select turtlebot2_description turtlebot2_bringup --parallel-workers $parallel_jobs --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
+RUN --mount=type=bind,source=.,target=$ROBOT_WORKSPACE/src,readonly \
+    source /opt/ros/$ROS_DISTRO/setup.bash && \
+    cd $ROBOT_WORKSPACE && \
+    colcon build --packages-select turtlebot2_description turtlebot2_bringup --parallel-workers $parallel_jobs --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
 
 
 # Kobuki udev rules for host machine
@@ -112,3 +118,9 @@ RUN source /opt/ros/$ROS_DISTRO/setup.bash && cd $ROBOT_WORKSPACE && colcon buil
 # `ros2 run kobuki_keyop kobuki_keyop_node`
 # or
 # `ros2 run teleop_twist_keyboard teleop_twist_keyboard`
+
+
+# Install laser filers
+RUN apt-get update && apt-get install ros-$ROS_DISTRO-laser-filters -y
+
+

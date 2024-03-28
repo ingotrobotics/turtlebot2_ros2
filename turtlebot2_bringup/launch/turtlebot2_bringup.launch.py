@@ -71,14 +71,20 @@ def generate_launch_description():
         ])
     )
 
-    slam_node = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([
-            PathJoinSubstitution([
-                FindPackageShare('slam_toolbox'),
-                'launch',
-                'online_async_launch.py'
-            ])
-        ])
+    slam_node = GroupAction(
+        actions=[
+            launch_ros.actions.SetRemap( src='/scan', dst='/scan_filtered'),
+
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource([
+                    PathJoinSubstitution([
+                        FindPackageShare('slam_toolbox'),
+                        'launch',
+                        'online_async_launch.py'
+                    ])
+                ])
+            )
+        ]
     )
 
     nav_node = IncludeLaunchDescription(
@@ -90,10 +96,25 @@ def generate_launch_description():
             ])
         ])
     )
+
+
+    laser_filter = LaunchDescription()
+    laser_filter_node = launch_ros.actions.Node(
+        package='laser_filters',
+        executable='scan_to_scan_filter_chain',
+        parameters=[
+            PathJoinSubstitution([
+                FindPackageShare('turtlebot2_bringup'),
+                'config',
+                'turtlebot2_laser_scan_filter.yaml'
+            ])],
+        )
+    laser_filter.add_action( laser_filter_node )
     
     return LaunchDescription([
         robot_model,
         laser_node,
+        laser_filter,
         kobuki_node,
         #robot_localization_node
         slam_node,
