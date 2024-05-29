@@ -73,6 +73,9 @@ RUN sed -i "s/node_executable='urg_node'/executable='urg_node_driver'/g" /opt/ro
 # Patch urg_node_serial.yaml (temporary fix, really should be changing the launch file)
 RUN sed -i 's/laser_frame_id: "laser"/laser_frame_id: "nav_laser"/g' /opt/ros/$ROS_DISTRO/share/urg_node/launch/urg_node_serial.yaml
 
+# Install RealSense drivers and ROS nodes
+RUN apt-get update && apt-get install ros-$ROS_DISTRO-realsense2-* -y
+
 # Install Turtlebot dependencies with rosdep
 WORKDIR $ROBOT_WORKSPACE
 RUN --mount=type=bind,source=.,target=$ROBOT_WORKSPACE/src,readonly \
