@@ -97,7 +97,6 @@ def generate_launch_description():
         ])
     )
 
-
     laser_filter = LaunchDescription()
     laser_filter_node = launch_ros.actions.Node(
         package='laser_filters',

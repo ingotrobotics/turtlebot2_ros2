@@ -73,6 +73,8 @@ RUN sed -i "s/node_executable='urg_node'/executable='urg_node_driver'/g" /opt/ro
 # Patch urg_node_serial.yaml (temporary fix, really should be changing the launch file)
 RUN sed -i 's/laser_frame_id: "laser"/laser_frame_id: "nav_laser"/g' /opt/ros/$ROS_DISTRO/share/urg_node/launch/urg_node_serial.yaml
 
+# Install RealSense (for D435)
+RUN apt-get update && apt-get install ros-$ROS_DISTRO-realsense2-* -y
 
 # Setup Turtlebot2 URDF
 #COPY turtlebot2_description/ $ROBOT_WORKSPACE/src/turtlebot2_description
@@ -81,17 +83,15 @@ RUN sed -i 's/laser_frame_id: "laser"/laser_frame_id: "nav_laser"/g' /opt/ros/$R
 #    mkdir -p $ROBOT_WORKSPACE/src
 # Pre-copied URDF and xacro files from https://github.com/turtlebot/turtlebot.git into our turtlebot2_description folder
 
+
+# Install Nav2 bringup package
+#RUN apt-get update && apt-get install -y \
+#    ros-$ROS_DISTRO-nav2-bringup \
+
 # Install dependencies
 WORKDIR $ROBOT_WORKSPACE
 RUN --mount=type=bind,source=.,target=$ROBOT_WORKSPACE/src,readonly \
     apt-get update && rosdep install --from-paths ./src -y --ignore-src
-
-# Install Nav2 packages
-RUN apt-get update && apt-get install -y \
-    ros-$ROS_DISTRO-navigation2 \
-    ros-$ROS_DISTRO-nav2-bringup \
-    ros-$ROS_DISTRO-robot-localization \
-    ros-$ROS_DISTRO-slam-toolbox
 
 # Build turtlebot2_description and turtlebot2_bringup
 SHELL ["/bin/bash", "-c"]
@@ -118,9 +118,3 @@ RUN --mount=type=bind,source=.,target=$ROBOT_WORKSPACE/src,readonly \
 # `ros2 run kobuki_keyop kobuki_keyop_node`
 # or
 # `ros2 run teleop_twist_keyboard teleop_twist_keyboard`
-
-
-# Install laser filers
-RUN apt-get update && apt-get install ros-$ROS_DISTRO-laser-filters -y
-
-
