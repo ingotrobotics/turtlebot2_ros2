@@ -4,7 +4,7 @@ ARG from_image=ros:iron
 ARG robot_workspace="/root/robot"
 
 #FROM osrf/ros:iron-desktop
-FROM $from_image AS builder
+FROM $from_image AS kobuki_builder
 MAINTAINER proan@ingotrobotics.com
 
 RUN apt-get update && apt-get upgrade -y && apt-get install wget -y
@@ -58,9 +58,9 @@ ENV ROBOT_WORKSPACE=$robot_workspace
 
 WORKDIR $ROBOT_WORKSPACE
 RUN mkdir -p $ROBOT_WORKSPACE/install
-COPY --from=builder $ROBOT_WORKSPACE/install/ install
+COPY --from=kobuki_builder $ROBOT_WORKSPACE/install/ install
 
-# Install dependencies with rosdep
+# Install Kobuki dependencies with rosdep
 WORKDIR $ROBOT_WORKSPACE
 RUN apt-get update && apt-get upgrade -y && rosdep install --from-paths ./install/*/ -y --ignore-src
 
@@ -73,28 +73,24 @@ RUN sed -i "s/node_executable='urg_node'/executable='urg_node_driver'/g" /opt/ro
 # Patch urg_node_serial.yaml (temporary fix, really should be changing the launch file)
 RUN sed -i 's/laser_frame_id: "laser"/laser_frame_id: "nav_laser"/g' /opt/ros/$ROS_DISTRO/share/urg_node/launch/urg_node_serial.yaml
 
-
-# Setup Turtlebot2 URDF
-COPY turtlebot2_description/ $ROBOT_WORKSPACE/src/turtlebot2_description
-COPY turtlebot2_bringup/ $ROBOT_WORKSPACE/src/turtlebot2_bringup
-# Pre-copied URDF and xacro files from https://github.com/turtlebot/turtlebot.git into our turtlebot2_description folder
-
-# Install dependencies
+# Install Turtlebot dependencies with rosdep
 WORKDIR $ROBOT_WORKSPACE
-RUN apt-get update && rosdep install --from-paths ./src -y --ignore-src
-
-# Install Nav2 packages
-RUN apt-get update && apt-get install -y \
-    ros-$ROS_DISTRO-navigation2 \
-    ros-$ROS_DISTRO-nav2-bringup \
-    ros-$ROS_DISTRO-robot-localization \
-    ros-$ROS_DISTRO-slam-toolbox
+RUN --mount=type=bind,source=.,target=$ROBOT_WORKSPACE/src,readonly \
+    apt-get update && rosdep install --from-paths ./src -y --ignore-src
 
 # Build turtlebot2_description and turtlebot2_bringup
+# The URDF and xacro files come from https://github.com/turtlebot/turtlebot.git
+# and have been copied into the turtlebot2_description folder
 SHELL ["/bin/bash", "-c"]
 ARG parallel_jobs=8
-RUN source /opt/ros/$ROS_DISTRO/setup.bash && cd $ROBOT_WORKSPACE && colcon build --packages-select turtlebot2_description turtlebot2_bringup --parallel-workers $parallel_jobs --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
+RUN --mount=type=bind,source=.,target=$ROBOT_WORKSPACE/src,readonly \
+    source /opt/ros/$ROS_DISTRO/setup.bash && \
+    cd $ROBOT_WORKSPACE && \
+    colcon build --packages-select turtlebot2_description turtlebot2_bringup --parallel-workers $parallel_jobs --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
 
+# Install Nav2 bringup package
+RUN apt-get update && apt-get install -y \
+    ros-$ROS_DISTRO-nav2-bringup
 
 # Kobuki udev rules for host machine
 # `wget https://raw.githubusercontent.com/kobuki-base/kobuki_ftdi/devel/60-kobuki.rules`
