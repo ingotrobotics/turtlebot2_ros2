@@ -81,6 +81,10 @@ WORKDIR $ROBOT_WORKSPACE
 RUN --mount=type=bind,source=.,target=$ROBOT_WORKSPACE/src,readonly \
     apt-get update && rosdep install --from-paths ./src -y --ignore-src
 
+# Install Nav2 bringup package
+RUN apt-get update && apt-get install -y \
+    ros-$ROS_DISTRO-nav2-bringup
+
 # Build turtlebot2_description and turtlebot2_bringup
 # The URDF and xacro files come from https://github.com/turtlebot/turtlebot.git
 # and have been copied into the turtlebot2_description folder
@@ -90,10 +94,6 @@ RUN --mount=type=bind,source=.,target=$ROBOT_WORKSPACE/src,readonly \
     source /opt/ros/$ROS_DISTRO/setup.bash && \
     cd $ROBOT_WORKSPACE && \
     colcon build --packages-select turtlebot2_description turtlebot2_bringup --parallel-workers $parallel_jobs --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
-
-# Install Nav2 bringup package
-RUN apt-get update && apt-get install -y \
-    ros-$ROS_DISTRO-nav2-bringup
 
 # Kobuki udev rules for host machine
 # `wget https://raw.githubusercontent.com/kobuki-base/kobuki_ftdi/devel/60-kobuki.rules`
