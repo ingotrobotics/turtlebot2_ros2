@@ -4,7 +4,7 @@
 <!--
     - Base      : kobuki
     - Stacks    : hexagons
-    - 3d Sensor : none
+    - 3d Sensor : realsense d435
     - Nav Sensor: houkyo
 -->    
 
@@ -14,8 +14,18 @@
   <xacro:include filename="$(find urg_node)/urdf/hokuyo_ust10.urdf.xacro" />
   
   <xacro:kobuki/>
-  <xacro:stack_hexagons   parent="base_link"/>
+  <xacro:stack_hexagons parent="base_link"/>
   <xacro:hokuyo_ust10_mount parent_link="plate_middle_link" topic="scan" prefix="nav">
     <origin xyz=".05 0 0" rpy="0 0 0" />
   </xacro:hokuyo_ust10_mount>
+
+  <xacro:arg name="use_nominal_extrinsics" default="true"/>
+  <xacro:arg name="add_plug" default="false" />
+  <xacro:arg name="use_mesh" default="true" />
+  <xacro:include filename="$(find realsense2_description)/urdf/_d435.urdf.xacro"/>
+
+  <xacro:sensor_d435 parent="base_link" use_nominal_extrinsics="$(arg use_nominal_extrinsics)" add_plug="$(arg add_plug)" use_mesh="$(arg use_mesh)">
+    <origin xyz=".13 0 .375" rpy="3.14159 0 0"/>
+  </xacro:sensor_d435>
+
 </robot>

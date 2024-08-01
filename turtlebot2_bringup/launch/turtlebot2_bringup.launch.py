@@ -109,13 +109,25 @@ def generate_launch_description():
             ])],
         )
     laser_filter.add_action( laser_filter_node )
+
+
+    realsense_node = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            PathJoinSubstitution([
+                FindPackageShare('realsense2_camera'),
+                'launch',
+                'rs_launch.py'
+            ])
+        ])
+    )
     
     return LaunchDescription([
         robot_model,
         laser_node,
         laser_filter,
+        realsense_node,
         kobuki_node,
-        #robot_localization_node
+        #robot_localization_node,
         slam_node,
         nav_node
     ])
