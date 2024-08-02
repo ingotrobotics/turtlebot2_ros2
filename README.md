@@ -33,7 +33,4 @@ The Turtlebot2 can be controlled by a separate instance of the same container. T
 If you want to interact with the Kobuki base without bringing up the full Turtlebot2 stack, launch the Kobuki with `ros2 launch kobuki_node kobuki_node-launch.py` and run keyboard teleoperation with remapping for the velocity commands:
 `ros2 run kobuki_keyop kobuki_keyop_node --ros-args --remap /cmd_vel:=/commands/velocity` or `ros2 run teleop_twist teleop_twist_keyboard --ros-args -r /cmd_vel:=/commands/velocity`.
 
-
-
-
-
+ Note that for MacOS environment, you'll need to add the flag `--platform linux/amd64` for all docker commands to specify non-arm variant
