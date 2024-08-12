@@ -4,7 +4,7 @@
 
 There have been previous efforts to support Turtlebot2 (based on Yujin's Kobuki mobile base), but none of them are docker-based nor supporting ROS2 Iron. This repository is our attempt to address this. We followed and then edited the instructions for the release-1.0.x for the Kobuki <https://kobuki.readthedocs.io/en/release-1.0.x/software.html>, and we took inspiration from the ROS 2 Bouncy Turtlebot2 repo: <https://github.com/ros2/turtlebot2_demo/tree/master>.
 
-The repository contains a dockerfile, two udev rules files, and two packages to run a Turtlebot2 using a Hokuyo URG-04.
+The repository contains a dockerfile, three udev rules files, and two packages to run a Turtlebot2 using a Hokuyo URG-04 as the navigation sensor and an Intel RealSense as a depth camera.
 
 Additional navigation sensors may be added if requested, and pull requests are always appreciated.
 
@@ -19,11 +19,11 @@ The dockerfile has default values for the base image (`ros:iron`) and parallel b
 
 *Note: as of 15-Nov-2023, the official Docker Hub ROS 2 Iron image (`ros:iron`) has an issue with the sgml-base package. We will try to update this repo with a work-around, but for the time being, stick with the larger OSRF desktop image (`osrf/ros:iron-desktop`)
 
-The robot computer needs the udev rules installed in `/etc/udev/rules.d/`. The Kobuki udev rule comes from the [Kobuki](https://github.com/kobuki-base) organization: <https://raw.githubusercontent.com/kobuki-base/kobuki_ftdi/devel/60-kobuki.rules>.
+The robot computer needs device udev rules installed in `/etc/udev/rules.d/`. The Kobuki udev rule comes from the [Kobuki](https://github.com/kobuki-base) organization: <https://raw.githubusercontent.com/kobuki-base/kobuki_ftdi/devel/60-kobuki.rules>. The Hokuyo udev rule can be found many places online. The RealSense udev rule comes from the [IntelRealSense](https://github.com/IntelRealSense) organization: <https://github.com/IntelRealSense/librealsense/blob/master/config/99-realsense-libusb.rules>.
 
 After the docker container is built, it can be launched with the command
-`docker run -it --device=/dev/ttyACM0 --device=/dev/kobuki --device=/ttyUSB0 ingot/turtlebot2-ros-iron:desktop`.
-If you are not running any of the Kobuki utilities like `kobuki-version-info`, you can omit the `--device=/dev/kobuki` switch.
+`docker run -it --device=/dev/ttyACM0 --device=/dev/kobuki --device=/ttyUSB0 -v /dev:/dev --device-cgroup-rule "c 81:* rmw" --device-cgroup-rule "c 189:* rmw" ingot/turtlebot2-ros-iron:desktop`.
+If you are not running any of the Kobuki utilities like `kobuki-version-info`, you can omit the `--device=/dev/kobuki` switch. The RealSense grabs multiple video devices, and we will look to improve the access to them so the `-v /dev:/dev` can be replaced.
 If you will run rviz on a separate machine, adding `--network=host` is a docker networking work-around to allow containers on separate machines but the same local network to communicate.
 
 Inside the docker container, first source the overlay: `source install/setup.bash`, then launch the Turtlebot2 with `ros2 launch turtlebot2_bringup turtlebot2_bringup.launch.py`
