@@ -5,7 +5,7 @@ ARG robot_workspace="/root/robot"
 
 #FROM osrf/ros:iron-desktop
 FROM $from_image AS kobuki_builder
-MAINTAINER proan@ingotrobotics.com
+LABEL org.opencontainers.image.authors="proan@ingotrobotics.com"
 
 RUN apt-get update && apt-get upgrade -y && apt-get install wget -y
 
