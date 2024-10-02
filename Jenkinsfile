@@ -59,6 +59,7 @@ pipeline {
                                 stage("tag: ${it}") {
                                     def tag = it.tokenize(':').last()
                                     echo "Building ${it} ..."
+                                    checkout scm
                                     sh "docker build \
                                         -t ingot/turtlebot2-ros2:${tag} \
                                         -f turtlebot2_ros2.dockerfile \
