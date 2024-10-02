@@ -63,7 +63,7 @@ pipeline {
                                         -t ingot/turtlebot2-ros2:${tag} \
                                         -f turtlebot2_ros2.dockerfile \
                                         --build-arg from_image=${it} \
-                                        --build-arg parrallel_jobs=2 ."
+                                        --build-arg parallel_jobs=2 ."
                                 }
                             }
                         }]
