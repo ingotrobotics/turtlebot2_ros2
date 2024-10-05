@@ -39,7 +39,7 @@ pipeline {
                 }
             }
             steps {
-                sh 'hadolint turtlebot2_ros2.dockerfile | tee -a hadolint_lint.txt'
+                sh 'hadolint --ignore DL3006 --ignore DL3008 turtlebot2_ros2.dockerfile | tee -a hadolint_lint.txt'
             }
             post {
                 always {

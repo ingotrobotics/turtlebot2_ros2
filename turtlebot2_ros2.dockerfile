@@ -1,13 +1,12 @@
-# Copyright 2023 Ingot Robotics
+# Copyright 2023-2024 Ingot Robotics
 
 ARG from_image=ros:iron
 ARG robot_workspace="/root/robot"
 
-#FROM osrf/ros:iron-desktop
 FROM $from_image AS kobuki_builder
 LABEL org.opencontainers.image.authors="proan@ingotrobotics.com"
 
-RUN apt-get update && apt-get upgrade -y && apt-get install wget -y
+RUN apt-get update && apt-get upgrade -y && apt-get install wget -y --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
 ARG robot_workspace
 ENV ROBOT_WORKSPACE=$robot_workspace
@@ -22,16 +21,16 @@ ENV ROBOT_WORKSPACE=$robot_workspace
 ENV KOBUKI_BUILD_SPACE=$ROBOT_WORKSPACE/kobuki_build_space
 WORKDIR $KOBUKI_BUILD_SPACE
 
-RUN wget https://raw.githubusercontent.com/kobuki-base/kobuki_documentation/release/1.0.x/resources/colcon.meta && \
-    wget https://raw.githubusercontent.com/kobuki-base/kobuki_documentation/release/1.0.x/resources/kobuki_standalone.repos
-#   wget https://raw.githubusercontent.com/kobuki-base/kobuki_documentation/release/1.0.x/resources/venv.bash
+RUN wget -q https://raw.githubusercontent.com/kobuki-base/kobuki_documentation/release/1.0.x/resources/colcon.meta && \
+    wget -q https://raw.githubusercontent.com/kobuki-base/kobuki_documentation/release/1.0.x/resources/kobuki_standalone.repos
+#   wget -q https://raw.githubusercontent.com/kobuki-base/kobuki_documentation/release/1.0.x/resources/venv.bash
 
 # Update kobuki_standalone.repos to build on iron
 # comment out foxy ament tools
 RUN sed -i 's/ament_/#&/g' $KOBUKI_BUILD_SPACE/kobuki_standalone.repos
 # edit kobuki_standalone.repos to add line for kobuki_ros
-RUN echo "  cmv_vel_mux      : { type: 'git', url: 'https://github.com/kobuki-base/cmd_vel_mux.git', version: 'devel' }" >> $KOBUKI_BUILD_SPACE/kobuki_standalone.repos 
-RUN echo "  kobuki_ros       : { type: 'git', url: 'https://github.com/kobuki-base/kobuki_ros.git',  version: 'devel' }" >> $KOBUKI_BUILD_SPACE/kobuki_standalone.repos 
+RUN echo "  cmv_vel_mux      : { type: 'git', url: 'https://github.com/kobuki-base/cmd_vel_mux.git', version: 'devel' }" >> $KOBUKI_BUILD_SPACE/kobuki_standalone.repos && \
+    echo "  kobuki_ros       : { type: 'git', url: 'https://github.com/kobuki-base/kobuki_ros.git',  version: 'devel' }" >> $KOBUKI_BUILD_SPACE/kobuki_standalone.repos 
 # update ecl_lite version to 1.2.x in kobuki_standalone.repos
 # (see https://github.com/stonier/ecl_lite/pull/38 )
 RUN sed -i '/ecl_lite/s/release\/1.1.x/release\/1.2.x/g' $KOBUKI_BUILD_SPACE/kobuki_standalone.repos 
@@ -41,13 +40,14 @@ RUN touch $ROBOT_WORKSPACE/src/eigen/AMENT_IGNORE
 
 # Install dependencies
 WORKDIR $ROBOT_WORKSPACE
-RUN apt-get update && rosdep install --from-paths ./src -y --ignore-src
+RUN apt-get update && rosdep install --from-paths ./src -y --ignore-src && rm -rf /var/lib/apt/lists/*
 
 SHELL ["/bin/bash", "-c"]
 
 # Build release with debug symbols
 ARG parallel_jobs=8
-RUN source /opt/ros/$ROS_DISTRO/setup.bash && cd $ROBOT_WORKSPACE && colcon build --parallel-workers $parallel_jobs --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
+WORKDIR $ROBOT_WORKSPACE
+RUN source "/opt/ros/$ROS_DISTRO/setup.bash" && colcon build --parallel-workers $parallel_jobs --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
 #    -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo
 
 
@@ -62,37 +62,36 @@ COPY --from=kobuki_builder $ROBOT_WORKSPACE/install/ install
 
 # Install Kobuki dependencies with rosdep
 WORKDIR $ROBOT_WORKSPACE
-RUN apt-get update && apt-get upgrade -y && rosdep install --from-paths ./install/*/ -y --ignore-src
+RUN apt-get update && apt-get upgrade -y && rosdep install --from-paths ./install/*/ -y --ignore-src && rm -rf /var/lib/apt/lists/*
 
 # Install URG node
-RUN apt-get update && apt-get install ros-$ROS_DISTRO-urg-node -y
+RUN apt-get update && apt-get install "ros-$ROS_DISTRO-urg-node" -y --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
 # Patch urg_node_launch.py to point to the actual executable
-RUN sed -i "s/node_executable='urg_node'/executable='urg_node_driver'/g" /opt/ros/$ROS_DISTRO/share/urg_node/launch/urg_node_launch.py
+RUN sed -i "s/node_executable='urg_node'/executable='urg_node_driver'/g" "/opt/ros/$ROS_DISTRO/share/urg_node/launch/urg_node_launch.py"
 
 # Patch urg_node_serial.yaml (temporary fix, really should be changing the launch file)
-RUN sed -i 's/laser_frame_id: "laser"/laser_frame_id: "nav_laser"/g' /opt/ros/$ROS_DISTRO/share/urg_node/launch/urg_node_serial.yaml
+RUN sed -i 's/laser_frame_id: "laser"/laser_frame_id: "nav_laser"/g' "/opt/ros/$ROS_DISTRO/share/urg_node/launch/urg_node_serial.yaml"
 
 # Install RealSense drivers and ROS nodes
-RUN apt-get update && apt-get install ros-$ROS_DISTRO-realsense2-* -y
+RUN apt-get update && apt-get install "ros-$ROS_DISTRO"-realsense2-* -y --no-install-recommends && rm -rf /var/lib/apt/lists/*
+
+# Install Nav2 bringup package
+RUN apt-get update && apt-get install "ros-$ROS_DISTRO-nav2-bringup" -y --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
 # Install Turtlebot dependencies with rosdep
 WORKDIR $ROBOT_WORKSPACE
-RUN --mount=type=bind,source=.,target=$ROBOT_WORKSPACE/src,readonly \
-    apt-get update && rosdep install --from-paths ./src -y --ignore-src
-
-# Install Nav2 bringup package
-RUN apt-get update && apt-get install -y \
-    ros-$ROS_DISTRO-nav2-bringup
+RUN --mount=type=bind,source=.,target="$ROBOT_WORKSPACE/src",readonly \
+    apt-get update && rosdep install --from-paths ./src -y --ignore-src && rm -rf /var/lib/apt/lists/*
 
 # Build turtlebot2_description and turtlebot2_bringup
 # The URDF and xacro files come from https://github.com/turtlebot/turtlebot.git
 # and have been copied into the turtlebot2_description folder
 SHELL ["/bin/bash", "-c"]
 ARG parallel_jobs=8
-RUN --mount=type=bind,source=.,target=$ROBOT_WORKSPACE/src,readonly \
-    source /opt/ros/$ROS_DISTRO/setup.bash && \
-    cd $ROBOT_WORKSPACE && \
+WORKDIR $ROBOT_WORKSPACE
+RUN --mount=type=bind,source=.,target="$ROBOT_WORKSPACE/src",readonly \
+    source "/opt/ros/$ROS_DISTRO/setup.bash" && \
     colcon build --packages-select turtlebot2_description turtlebot2_bringup --parallel-workers $parallel_jobs --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
 
 # Kobuki udev rules for host machine
