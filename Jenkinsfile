@@ -19,7 +19,7 @@ localRegistryExists = false
 try {
     library('ingot-robotics')
     localRegistryExists = true
-    }
+}
 catch (e) {
     localRegistryExists = false
     print e
