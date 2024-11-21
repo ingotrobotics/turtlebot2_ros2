@@ -16,27 +16,17 @@ ENV ROBOT_WORKSPACE=$robot_workspace
 # https://docs.docker.com/develop/develop-images/guidelines/
 
 # Build Kobuki drivers (https://kobuki.readthedocs.io/en/release-1.0.x/software.html)
-#RUN apt-get update && apt-get install wget python3-venv -y
-
 ENV KOBUKI_BUILD_SPACE=$ROBOT_WORKSPACE/kobuki_build_space
 WORKDIR $KOBUKI_BUILD_SPACE
 
-RUN wget -q https://raw.githubusercontent.com/kobuki-base/kobuki_documentation/release/1.0.x/resources/colcon.meta && \
-    wget -q https://raw.githubusercontent.com/kobuki-base/kobuki_documentation/release/1.0.x/resources/kobuki_standalone.repos
-#   wget -q https://raw.githubusercontent.com/kobuki-base/kobuki_documentation/release/1.0.x/resources/venv.bash
+# Get list of repos needed to build from source
+#RUN wget -q https://raw.githubusercontent.com/kobuki-base/kobuki_documentation/release/1.0.x/resources/kobuki_standalone.repos
+COPY kobuki_standalone.repos .
 
-# Update kobuki_standalone.repos to build on iron
-# comment out foxy ament tools
-RUN sed -i 's/ament_/#&/g' $KOBUKI_BUILD_SPACE/kobuki_standalone.repos
-# edit kobuki_standalone.repos to add line for kobuki_ros
-RUN echo "  cmv_vel_mux      : { type: 'git', url: 'https://github.com/kobuki-base/cmd_vel_mux.git', version: 'devel' }" >> $KOBUKI_BUILD_SPACE/kobuki_standalone.repos && \
-    echo "  kobuki_ros       : { type: 'git', url: 'https://github.com/kobuki-base/kobuki_ros.git',  version: 'devel' }" >> $KOBUKI_BUILD_SPACE/kobuki_standalone.repos 
-# update ecl_lite version to 1.2.x in kobuki_standalone.repos
-# (see https://github.com/stonier/ecl_lite/pull/38 )
-RUN sed -i '/ecl_lite/s/release\/1.1.x/release\/1.2.x/g' $KOBUKI_BUILD_SPACE/kobuki_standalone.repos 
-
+# Use vcs
 RUN mkdir -p $ROBOT_WORKSPACE/src && vcs import $ROBOT_WORKSPACE/src < $KOBUKI_BUILD_SPACE/kobuki_standalone.repos
-RUN touch $ROBOT_WORKSPACE/src/eigen/AMENT_IGNORE
+# ecl_utilities won't compile from source (yet) but has an apt package available
+RUN rm -rf $ROBOT_WORKSPACE/src/ecl_core/ecl_utilities
 
 # Install dependencies
 WORKDIR $ROBOT_WORKSPACE
@@ -49,7 +39,6 @@ ARG parallel_jobs=8
 WORKDIR $ROBOT_WORKSPACE
 RUN source "/opt/ros/$ROS_DISTRO/setup.bash" && colcon build --parallel-workers $parallel_jobs --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
 #    -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo
-
 
 FROM $from_image AS mobile_base
 
