@@ -23,10 +23,8 @@ WORKDIR $KOBUKI_BUILD_SPACE
 #RUN wget -q https://raw.githubusercontent.com/kobuki-base/kobuki_documentation/release/1.0.x/resources/kobuki_standalone.repos
 COPY kobuki_standalone.repos .
 
-# Use vcs
+# Use vcs to import source repos
 RUN mkdir -p $ROBOT_WORKSPACE/src && vcs import $ROBOT_WORKSPACE/src < $KOBUKI_BUILD_SPACE/kobuki_standalone.repos
-# ecl_utilities won't compile from source (yet) but has an apt package available
-RUN rm -rf $ROBOT_WORKSPACE/src/ecl_core/ecl_utilities
 
 # Install dependencies
 WORKDIR $ROBOT_WORKSPACE
@@ -38,7 +36,6 @@ SHELL ["/bin/bash", "-c"]
 ARG parallel_jobs=8
 WORKDIR $ROBOT_WORKSPACE
 RUN source "/opt/ros/$ROS_DISTRO/setup.bash" && colcon build --parallel-workers $parallel_jobs --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
-#    -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo
 
 FROM $from_image AS mobile_base
 
