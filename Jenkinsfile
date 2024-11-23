@@ -3,7 +3,7 @@
 // Jenkinsfile to lint, build, and test turtlebot2_ros2 repo
 
 // Supported ROS 2 versions are given in the `rosVersions` list
-def rosVersions = ['iron', 'humble'] //'jazzy'
+def rosVersions = ['jazzy', 'iron', 'humble']
 
 // For each ROS 2 version, build from the official docker image and the OSRF
 // desktop image
