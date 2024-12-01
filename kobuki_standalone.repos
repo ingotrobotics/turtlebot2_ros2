@@ -1,0 +1,14 @@
+#
+# Description       : Repos needed for a standalone build of kobuki
+# Versions          : ROS 2 Jazzy, Iron, and Humble
+# Build Dependencies: colcon-core, colcon-common-extensions
+#
+repositories:
+  # Kobuki dependencies
+  ecl_lite         : { type: 'git', url: 'https://github.com/ingotrobotics/ecl_lite.git',   version: 'bugfix/jazzy_error_overloaded-virtual' }
+  ecl_core         : { type: 'git', url: 'https://github.com/ingotrobotics/ecl_core.git',   version: 'bugfix/ecl_utilities_maybe-uninitialized' }
+
+  # Kobuki
+  kobuki_core      : { type: 'git', url: 'https://github.com/kobuki-base/kobuki_core.git',  version: 'devel' }
+  kobuki_ros       : { type: 'git', url: 'https://github.com/ingotrobotics/kobuki_ros.git', version: 'bugfix/pessimizing-move' }
+  cmv_vel_mux      : { type: 'git', url: 'https://github.com/kobuki-base/cmd_vel_mux.git',  version: 'devel' }
