@@ -11,7 +11,18 @@ def baseImages = []
 rosVersions.each {
     baseImages.add( 'ros:' + it )
     baseImages.add( 'osrf/ros:' + it + '-desktop')
-} 
+}
+
+// Translate the Git branch name into a format that is safe to use in Docker tags
+// https://docs.docker.com/reference/cli/docker/image/tag/#extended-description,
+// 1. Do not add if branch is "main" or "master"
+// 2. Consider only after last `/`
+def branchTag = ""
+if (env.BRANCH_NAME != "main" || env.BRANCH_NAME != "master" ) {
+    branchTag = '-' + env.BRANCH_NAME.tokenize('/').last()
+// 2. Convert allowed Git characters that are not allowed by Docker
+// TODO
+}
 
 // If Ingot Robotics shared library is not available on the Jenkins instance,
 // skip local registry steps
@@ -54,11 +65,11 @@ pipeline {
             steps {
                 script {
                     def parallelStages = baseImages.collectEntries {
-                        ["${it}" : {
+                        ["$it$branchTag" : {
                             node {
-                                stage("tag: ${it}") {
-                                    def tag = it.tokenize(':').last()
-                                    echo "Building ${it} ..."
+                                stage("tag: ${it}" + "${branchTag}") {
+                                    def tag = it.tokenize(':').last() + branchTag
+                                    echo "Building ${it}${branchTag} ..."
                                     checkout scm
                                     sh "docker build \
                                         -t ingot/turtlebot2-ros2:${tag} \
