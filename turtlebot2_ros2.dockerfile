@@ -66,9 +66,12 @@ RUN apt-get update && apt-get install "ros-$ROS_DISTRO"-realsense2-* -y --no-ins
 RUN apt-get update && apt-get install "ros-$ROS_DISTRO-nav2-bringup" -y --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
 # Install Turtlebot dependencies with rosdep
-WORKDIR $ROBOT_WORKSPACE
-RUN --mount=type=bind,source=.,target="$ROBOT_WORKSPACE/src",readonly \
-    apt-get update && rosdep install --from-paths ./src -y --ignore-src && rm -rf /var/lib/apt/lists/*
+WORKDIR "$ROBOT_WORKSPACE"
+RUN mkdir -p "$ROBOT_WORKSPACE/src"
+#RUN --mount=type=bind,source=.,target="$ROBOT_WORKSPACE/src",readonly \
+COPY ./turtlebot2_description ./src/turtlebot2_description
+COPY ./turtlebot2_bringup ./src/turtlebot2_bringup
+RUN apt-get update && rosdep install --from-paths ./src -y --ignore-src && rm -rf /var/lib/apt/lists/*
 
 # Build turtlebot2_description and turtlebot2_bringup
 # The URDF and xacro files come from https://github.com/turtlebot/turtlebot.git
@@ -76,23 +79,39 @@ RUN --mount=type=bind,source=.,target="$ROBOT_WORKSPACE/src",readonly \
 SHELL ["/bin/bash", "-c"]
 ARG parallel_jobs=8
 WORKDIR $ROBOT_WORKSPACE
-RUN --mount=type=bind,source=.,target="$ROBOT_WORKSPACE/src",readonly \
-    source "/opt/ros/$ROS_DISTRO/setup.bash" && \
+#RUN --mount=type=bind,source=.,target="$ROBOT_WORKSPACE/src",readonly \
+RUN source "/opt/ros/$ROS_DISTRO/setup.bash" && \
     colcon build --packages-select turtlebot2_description turtlebot2_bringup --parallel-workers $parallel_jobs --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo
+
+# Install Zenoh
+RUN git clone https://github.com/ros2/rmw_zenoh.git "$ROBOT_WORKSPACE/src/rmw_zenoh"
+RUN apt-get update && \
+    rosdep install --from-paths ./src -y --ignore-src && \
+    rm -rf /var/lib/apt/lists/*
+RUN source "/opt/ros/$ROS_DISTRO/setup.bash" && \
+    colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
+RUN mkdir -p "$ROBOT_WORKSPACE/zenoh_confs" && \
+    cp "$ROBOT_WORKSPACE/src/rmw_zenoh/rmw_zenoh_cpp/config/DEFAULT_RMW_ZENOH_ROUTER_CONFIG.json5" "$ROBOT_WORKSPACE/zenoh_confs/ROUTER_CONFIG.json5"
+
+# Set ROS to use Zenoh as the middleware
+RUN echo "export RMW_IMPLEMENTATION=rmw_zenoh_cpp" >> /root/.bashrc && \
+    echo "export RUST_LOG=info" >> /root/.bashrc
+
+# Copy script for launching Zenoh in the background
+COPY background_zenoh_router.sh "$ROBOT_WORKSPACE"
+RUN chmod +x "$ROBOT_WORKSPACE/background_zenoh_router.sh"
 
 # Kobuki udev rules for host machine
 # `wget https://raw.githubusercontent.com/kobuki-base/kobuki_ftdi/devel/60-kobuki.rules`
 # and put that file in `/etc/udev/rules.d/`
 
 # Launch container with Hokuyo and Kobuki USB connections
-# `docker run -it --device=/dev/ttyUSB0 --device=/dev/kobuki --device=/dev/ttyACM0 <container name>`
-# If running rviz on a separate machine, adding `--network=host` is a
-# docker networking work-around to allow containers to communicate
-#
+# `docker run -it --rm -p 7447:7447 --device=/dev/ttyUSB0 --device=/dev/kobuki --device=/dev/ttyACM0 <container name>`
+# Launch Zenoh router with
+# `./background_zenoh_router.sh`
 # Launch turtlebot2 with
-# `ros2 launch turtlebot2_bringup turtlebot2_bringup.launch.py`
-
+# `source install/setup.bash && ros2 launch turtlebot2_bringup turtlebot2_bringup.launch.py`
 # Run second container to do keyboard control, and in that container
-# `ros2 run kobuki_keyop kobuki_keyop_node`
-# or
+# `./background_zenoh_router.sh`, `source install/setup.bash`, and then
+# `ros2 run kobuki_keyop kobuki_keyop_node` or
 # `ros2 run teleop_twist_keyboard teleop_twist_keyboard`

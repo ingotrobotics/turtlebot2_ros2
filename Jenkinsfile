@@ -3,7 +3,7 @@
 // Jenkinsfile to lint, build, and test turtlebot2_ros2 repo
 
 // Supported ROS 2 versions are given in the `rosVersions` list
-def rosVersions = ['jazzy', 'iron', 'humble']
+def rosVersions = ['jazzy', 'iron']
 
 // For each ROS 2 version, build from the official docker image and the OSRF
 // desktop image
@@ -18,7 +18,7 @@ rosVersions.each {
 // 1. Do not add if branch is "main" or "master"
 // 2. Consider only after last `/`
 def branchTag = ""
-if (env.BRANCH_NAME != "main" || env.BRANCH_NAME != "master" ) {
+if( env.BRANCH_NAME != "main" || env.BRANCH_NAME != "master" ) {
     branchTag = '-' + env.BRANCH_NAME.tokenize('/').last()
 // 2. Convert allowed Git characters that are not allowed by Docker
 // TODO
