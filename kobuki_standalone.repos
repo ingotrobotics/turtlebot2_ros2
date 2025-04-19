@@ -10,5 +10,5 @@ repositories:
 
   # Kobuki
   kobuki_core      : { type: 'git', url: 'https://github.com/kobuki-base/kobuki_core.git',  version: 'devel' }
-  kobuki_ros       : { type: 'git', url: 'https://github.com/ingotrobotics/kobuki_ros.git', version: 'bugfix/pessimizing-move' }
+  kobuki_ros       : { type: 'git', url: 'https://github.com/kobuki-base/kobuki_ros.git',   version: 'devel' }
   cmv_vel_mux      : { type: 'git', url: 'https://github.com/kobuki-base/cmd_vel_mux.git',  version: 'devel' }
